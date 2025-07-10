@@ -35,13 +35,14 @@ public class ReplicationService {
 
         List<String> tablesToReplicate = sourceTablesProperties.getTables();
         List<SourceDbProperties> activeSources = sourceDatabasesProperties.getInfo().stream()
-                .filter(SourceDbProperties::isActive).toList();
+                .filter(SourceDbProperties::isActive)
+                .toList();
 
         RowTypeInfo rowTypeInfo = new RowTypeInfo(
-                TypeInformation.of(String.class),
-                TypeInformation.of(String.class),
-                TypeInformation.of(String.class),
-                TypeInformation.of(Timestamp.class)
+                TypeInformation.of(String.class),     // data_source
+                TypeInformation.of(String.class),     // table_name
+                TypeInformation.of(String.class),     // data (json)
+                TypeInformation.of(Timestamp.class)   // updated_at
         );
 
         var rowsDS = env.fromCollection(activeSources)
@@ -50,16 +51,16 @@ public class ReplicationService {
 
         rowsDS.output(
                 JDBCOutputFormat.buildJDBCOutputFormat()
-                        .setDrivername("com.microsoft.sqlserver.jdbc.SQLServerDriver")
+                        .setDrivername("org.postgresql.Driver")
                         .setDBUrl(targetDateBaseProperty.getUrl())
                         .setUsername(targetDateBaseProperty.getUsername())
                         .setPassword(targetDateBaseProperty.getPassword())
-                        .setQuery("INSERT INTO metadata (data_source, table_name, data, updated_at) VALUES (?, ?, ?, ?)")
+                        .setQuery("INSERT INTO metadata (data_source, table_name, data, updated_at) VALUES (?, ?, ?::jsonb, ?)")
                         .setSqlTypes(new int[]{
-                                Types.NVARCHAR,
-                                Types.NVARCHAR,
-                                Types.NVARCHAR,
-                                Types.TIMESTAMP
+                                Types.VARCHAR,   // источник бд
+                                Types.VARCHAR,   // имя системной таблицы
+                                Types.VARCHAR,   // строка из таблицы в виде json
+                                Types.TIMESTAMP  // дата последнего обновления
                         })
                         .finish()
         );

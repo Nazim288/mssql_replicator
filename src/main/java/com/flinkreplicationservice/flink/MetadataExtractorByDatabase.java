@@ -1,7 +1,7 @@
 package com.flinkreplicationservice.flink;
 
-import com.flinkreplicationservice.properties.SourceDbProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.flinkreplicationservice.properties.SourceDbProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -37,10 +37,12 @@ public class MetadataExtractorByDatabase implements FlatMapFunction<SourceDbProp
     @Override
     public void flatMap(SourceDbProperties source, Collector<Row> collector) {
         Connection conn = null;
+        Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now()); // создаём один раз
+
         try {
             conn = connectWithRetries(source);
             for (String tableName : tables) {
-                processTable(conn, source, tableName, collector);
+                processTable(conn, source, tableName, collector, currentTimestamp);
             }
         } catch (Exception e) {
             log.error("Failed to extract metadata for DB {}: {}", source.getName(), e.getMessage(), e);
@@ -66,7 +68,7 @@ public class MetadataExtractorByDatabase implements FlatMapFunction<SourceDbProp
         throw new RuntimeException("Unexpected failure connecting to DB " + source.getName());
     }
 
-    private void processTable(Connection conn, SourceDbProperties source, String tableName, Collector<Row> collector) {
+    private void processTable(Connection conn, SourceDbProperties source, String tableName, Collector<Row> collector, Timestamp currentTimestamp) {
         String sql = "SELECT * FROM " + tableName;
         try (PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -98,10 +100,6 @@ public class MetadataExtractorByDatabase implements FlatMapFunction<SourceDbProp
     }
 
     private Object convertJdbcValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-
         if (value instanceof Array array) {
             try {
                 Object[] arr = (Object[]) array.getArray();
@@ -125,10 +123,10 @@ public class MetadataExtractorByDatabase implements FlatMapFunction<SourceDbProp
             }
         } else if (value instanceof Struct struct) {
             return struct.toString();
+        } else if (value != null && value.getClass().getName().startsWith("org.postgresql")) {
+            return value.toString();
         }
-
-        // Принудительное приведение всех прочих типов к строке
-        return String.valueOf(value);
+        return value;
     }
 
     private void closeQuietly(AutoCloseable ac) {

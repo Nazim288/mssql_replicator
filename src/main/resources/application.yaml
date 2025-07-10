@@ -3,10 +3,9 @@ spring:
     name: mssql-flink-replication-service
 
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=target_db;encrypt=false
-    username: sa
-    password: StrongP@ss1
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:postgresql://localhost:5432/target_db?currentSchema=mssql_metadata
+    username: postgres
+    password: kampus
     hikari:
       maximum-pool-size: 20
       connection-timeout: 30000
@@ -15,7 +14,7 @@ spring:
       pool-name: TargetDBPool
 
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
 
@@ -190,9 +189,9 @@ replication:
       - sys.extended_properties
 
     target-database-property:
-      url: jdbc:sqlserver://localhost:1433;databaseName=target_db;encrypt=false
-      username: sa
-      password: StrongP@ss1
+      url: jdbc:postgresql://localhost:5432/target_db?currentSchema=mssql_metadata
+      username: postgres
+      password: kampus
 
 flink:
   job:
