@@ -1,5 +1,6 @@
-package com.flinkreplicationservice.properties;
+package com.gpb.replicator.properties;
 
+import com.gpb.replicator.dto.SourceDbConnections;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,6 +14,6 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "replication.databases")
 public class SourceDatabasesProperties {
-    private List<SourceDbProperties> info = new ArrayList<>();
+    private List<SourceDbConnections> info = new ArrayList<>();
 
 }

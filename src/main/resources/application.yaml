@@ -1,11 +1,18 @@
+# application.yml
+
 spring:
   application:
-    name: mssql-flink-replication-service
+    name: flink-replication-service
+    version: 0.0.1-SNAPSHOT
+    dpt: 912044
+    dntdom: GPB
+    user: test_user
 
   datasource:
     url: jdbc:postgresql://localhost:5432/target_db?currentSchema=mssql_metadata
     username: postgres
     password: kampus
+    driverClassName: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
       connection-timeout: 30000
@@ -13,10 +20,37 @@ spring:
       max-lifetime: 1800000
       pool-name: TargetDBPool
 
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: mssql_metadata
+
   flyway:
+    schemas: mssql_metadata
     enabled: true
-    baseline-on-migrate: true
     locations: classpath:db/migration
+    url: jdbc:postgresql://localhost:5432/target_db?currentSchema=mssql_metadata
+    user: postgres
+    password: kampus
+
+logs-database:
+  enabled: true
+  task-create-partition: 0 0 0 * * ?
+  url: jdbc:postgresql://localhost:5432/log_db
+  username: postgres
+  password: kampus
+  driverClassName: org.postgresql.Driver
+
+clean-database-logs:
+  # cron expression, to switch off put value '-'
+  task-cleaner-schedule: 0 0 1 * * ?
+  # delete logs from db that older than X years
+  clean-period: 3
+
+
 
 management:
   endpoints:
@@ -31,167 +65,31 @@ management:
         prometheus:
           enabled: true
 
+
 replication:
   enabled: true
   max-retries: 5
 
-  databases:
-    info:
-      - name: source_db_1
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_2
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_3
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_4
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_5
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_6
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_7
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_8
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_9
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_10
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_11
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_12
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_13
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_14
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_15
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_16
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_17
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_18
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_19
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_1;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-      - name: source_db_20
-        url: jdbc:sqlserver://localhost:1433;databaseName=source_db_2;encrypt=true;trustServerCertificate=true;
-        username: sa
-        password: StrongP@ss1
-        schema: dbo
-        priority: 1
-        active: true
-
-  mssql:
+  postgres:
     tables:
-      - sys.tables
-      - sys.columns
-      - sys.schemas
-      - sys.indexes
-      - sys.foreign_keys
-      - sys.key_constraints
-      - sys.extended_properties
-
-    target-database-property:
-      url: jdbc:postgresql://localhost:5432/target_db?currentSchema=mssql_metadata
-      username: postgres
-      password: kampus
+#      - pg_stat_statements
+      - pg_catalog.pg_database
+      - pg_catalog.pg_user
+      - pg_catalog.pg_class
+      - pg_catalog.pg_namespace
+      - pg_catalog.pg_partitioned_table
+      - information_schema.columns
+      - information_schema.tables
+      - pg_catalog.pg_policy
+      - pg_catalog.pg_description
+      - pg_catalog.pg_sequence
+      - pg_catalog.pg_attrdef
+      - pg_catalog.pg_attribute
+      - pg_catalog.pg_type
+      - pg_catalog.pg_index
+      - pg_catalog.pg_constraint
+      - pg_catalog.pg_am
+      - pg_catalog.pg_enum
 
 flink:
   job:
@@ -199,35 +97,21 @@ flink:
     parallelism: 20
     max-retries: 3
     retry-delay-ms: 1000
-    cron: "0 0 22 * * *"
-
-    checkpoint:
-      interval: 60000 # ???????? ????? ????????? (??)
-      timeout: 30000
-      mode: EXACTLY_ONCE
-    restart-strategy:
-      fixed-delay:
-        attempts: 3
-        delay: 10000
-    buffer-timeout: 100
-    watermark-interval: 10000
 
 logging:
   level:
     root: INFO
-    org:
-      apache:
-        flink: INFO
-      springframework:
-        jdbc: WARN
-      hikari: WARN
-    com:
-      example:
-        flinkreplication: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl: DEBUG
+    org.apache.flink: INFO
+    org.springframework.jdbc: WARN
+    com.example.flinkreplication: DEBUG
   file:
     name: logs/flink-replication.log
-    max-size: 50MB
-    max-history: 7
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     console: "%d{HH:mm:ss} %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 7

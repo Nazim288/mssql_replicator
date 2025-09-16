@@ -1,4 +1,4 @@
-package com.flinkreplicationservice.config;
+package com.gpb.replicator.config;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;

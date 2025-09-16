@@ -1,0 +1,13 @@
+[
+    {
+        "name": "SYS",
+        "service_name": "SYS",
+        "db_type": "mssql",
+        "url": "jdbc:sqlserver://localhost:1433;databaseName=dbName;encrypt=true;trustServerCertificate=true;",
+        "username": "bw_admin",
+        "password": "Password123",
+        "schema": "master",
+        "priority": 1,
+        "active": true
+    }
+]

@@ -1,4 +1,4 @@
-package com.flinkreplicationservice.properties;
+package com.gpb.replicator.properties;
 
 import lombok.Getter;
 import lombok.Setter;

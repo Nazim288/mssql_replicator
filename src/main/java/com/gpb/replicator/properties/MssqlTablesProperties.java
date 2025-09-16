@@ -1,4 +1,4 @@
-package com.flinkreplicationservice.properties;
+package com.gpb.replicator.properties;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +12,7 @@ import java.util.List;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "replication.mssql")
-public class SourceTablesProperties {
+public class MssqlTablesProperties {
+
     private List<String> tables;
 }
