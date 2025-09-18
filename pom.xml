@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.gpb</groupId>
-    <artifactId>mssql-replicator</artifactId>
+    <groupId>com.gpb.replication</groupId>
+    <artifactId>mssql-replication</artifactId>
     <version>0.0.2-SNAPSHOT</version>
-    <name>mssql-replicator</name>
-    <description>MSSQL replication with Apache Flink</description>
+    <name>mssql-replication</name>
+    <description>MSSQL replication</description>
 
     <properties>
         <java.version>17</java.version>
@@ -59,6 +59,17 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
         <!-- Логирование -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -67,6 +78,11 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.1</version> <!-- Проверьте актуальную версию -->
         </dependency>
 
         <!-- Database -->
@@ -83,35 +99,6 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-        </dependency>
-
-        <!-- Apache Flink Core -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-api-java-bridge</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-planner_2.12</artifactId>
-            <version>${flink.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-java</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-jdbc_2.12</artifactId>
-            <version>1.10.0</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Lombok -->

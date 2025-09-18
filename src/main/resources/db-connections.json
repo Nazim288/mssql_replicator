@@ -1,13 +1,13 @@
 [
     {
-        "name": "SYS",
-        "service_name": "SYS",
-        "db_type": "mssql",
-        "url": "jdbc:sqlserver://localhost:1433;databaseName=dbName;encrypt=true;trustServerCertificate=true;",
-        "username": "bw_admin",
-        "password": "Password123",
-        "schema": "master",
-        "priority": 1,
-        "active": true
+      "name": "source_db_1",
+      "service_name": "source_db_1",
+      "db_type": "mssql",
+      "url": "jdbc:sqlserver://localhost:1433;databaseName=dbName;encrypt=true;trustServerCertificate=true;",
+      "username": "user",
+      "password": "pass",
+      "schema": "master",
+      "priority": 1,
+      "active": true
     }
-]
+  ]
