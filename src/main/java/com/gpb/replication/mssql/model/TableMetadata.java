@@ -1,5 +1,7 @@
 package com.gpb.replication.mssql.model;
 
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
@@ -50,6 +52,6 @@ public class TableMetadata {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private Long createdAt;
+    private LocalDateTime createdAt;
 }
 

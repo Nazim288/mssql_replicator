@@ -28,6 +28,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +108,7 @@ public class ReplicationServiceImpl implements ReplicationService {
             AND is_read_only = 0;
         """;
         List<String> response = new ArrayList<>();
-        Long currentTime = System.currentTimeMillis();
+        LocalDateTime currentTime = LocalDateTime.now();
 
         try (Connection conn = DriverManager.getConnection(source.getUrl(), source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -156,7 +157,7 @@ public class ReplicationServiceImpl implements ReplicationService {
         """;
         List<SchemaMetadata> entities = new ArrayList<>();
         String url = buildDbUrl(source.getUrl(), dbName);
-        Long currentTime = System.currentTimeMillis();
+        LocalDateTime currentTime = LocalDateTime.now();
 
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -272,7 +273,7 @@ public class ReplicationServiceImpl implements ReplicationService {
         """;
 
         String url = buildDbUrl(source.getUrl(), dbName);
-        Long currentTime = System.currentTimeMillis();
+        LocalDateTime currentTime = LocalDateTime.now();
 
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sql);

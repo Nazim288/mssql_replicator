@@ -1,5 +1,7 @@
 package com.gpb.replication.mssql.model;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -32,6 +34,6 @@ public class DatabaseMetadata {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private Long createdAt;
+    private LocalDateTime createdAt;
 }
 

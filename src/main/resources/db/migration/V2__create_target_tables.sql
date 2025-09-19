@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS mssql_metadata.database_metadata (
     name        varchar(200) NOT NULL,
     parent_fqn  varchar(200) NOT NULL,
     hash_data   varchar(500) NULL,
-    created_at  bigint NULL,
+    created_at  timestamp NULL,
     CONSTRAINT database_metadata_pk PRIMARY KEY (id, service_name)
 );
 CREATE INDEX database_metadata_service_name_idx ON mssql_metadata.database_metadata USING btree (service_name);
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS mssql_metadata.schema_metadata (
     name        varchar(200) NOT NULL,
     parent_fqn  varchar(300) NOT NULL,
     hash_data   varchar(500) NULL,
-    created_at  bigint NULL,
+    created_at  timestamp NULL,
 	CONSTRAINT schema_metadata_pk PRIMARY KEY (id, service_name)
 );
 CREATE INDEX schema_metadata_service_name_idx ON mssql_metadata.schema_metadata USING btree (service_name);
@@ -35,7 +35,7 @@ CREATE TABLE mssql_metadata.table_metadata (
     parent_fqn  varchar(400) NOT NULL,          -- новое поле (FQN схемы)
     data        jsonb NULL,                     -- теперь содержит только список колонок
     hash_data   varchar(500) NULL,
-    created_at  bigint NULL,
+    created_at  timestamp NULL,
 	CONSTRAINT table_metadata_pk PRIMARY KEY (id, service_name)
 );
 CREATE INDEX table_metadata_service_name_idx ON mssql_metadata.table_metadata USING btree (service_name);
