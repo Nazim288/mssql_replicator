@@ -19,15 +19,15 @@ import lombok.Data;
 public class DatabaseMetadata {
     @EmbeddedId
     private EntityId id;
-    
+
     @Column(name = "fqn")
     private String fqn;
 
     @Column(name = "name")
     private String name;
 
-    @Column(name = "parent_fqn")
-    private String parentFqn;
+    @Column(name = "service_name")
+    private String serviceName;
 
     @Column(name = "hash_data")
     private String hashData;

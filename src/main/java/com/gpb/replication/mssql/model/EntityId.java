@@ -12,12 +12,12 @@ public class EntityId implements Serializable{
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "service_name")
-    private String serviceName;
+    @Column(name = "parent_fqn")
+    private String parentFqn;
 
-    public EntityId(Long id, String serviceName) {
+    public EntityId(Long id, String parentFqn) {
         this.id = id;
-        this.serviceName = serviceName;
+        this.parentFqn = parentFqn;
     }
 
     public EntityId() {
