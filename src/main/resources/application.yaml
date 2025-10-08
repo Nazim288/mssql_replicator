@@ -2,7 +2,7 @@
 
 spring:
   application:
-    name: flink-replication-service
+    name: mssql-replication-service
     version: 0.0.1-SNAPSHOT
     dpt: 912044
     dntdom: GPB

@@ -20,7 +20,7 @@ public class LogsDbConfig {
     @Bean(name = "logsDataSource")
     public DataSource logsDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver"); // или другой драйвер
+        dataSource.setDriverClassName("org.postgresql.Driver");
         dataSource.setUrl(logsDatabaseProperties.getUrl());
         dataSource.setUsername(logsDatabaseProperties.getUsername());
         dataSource.setPassword(logsDatabaseProperties.getPassword());
