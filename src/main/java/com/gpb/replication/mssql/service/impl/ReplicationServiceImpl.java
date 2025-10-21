@@ -15,6 +15,7 @@ import com.gpb.replication.mssql.repository.SchemaMetadataRepository;
 import com.gpb.replication.mssql.repository.TableMetadataRepository;
 import com.gpb.replication.mssql.service.DbSourcesService;
 import com.gpb.replication.mssql.service.ReplicationService;
+import com.gpb.replication.mssql.service.VaultSecretService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +32,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,8 +45,9 @@ public class ReplicationServiceImpl implements ReplicationService {
     private final DatabaseMetadataRepository databaseRep;
     private final SchemaMetadataRepository schemaRep;
     private final TableMetadataRepository tableRep;
-
     private final SqlTemplates sqlTemplates;
+
+    private final VaultSecretService vault;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,33 +58,70 @@ public class ReplicationServiceImpl implements ReplicationService {
 
     @Override
     public void startReplication(String serviceName) {
+        String jobId = UUID.randomUUID().toString();
+        long startTime = System.nanoTime();
+        log.info("Начало репликации Mssql для {} (job_id={})", serviceName, jobId);
+
         truncateTables(serviceName);
 
-        Map<String, SourceDbConnections> dbConnectionsMap = dbSourcesService.getDbConnections()
-                .stream()
-                .collect(Collectors.toMap(SourceDbConnections::getName, Function.identity()));
+        SourceDbConnections source;
 
-        if (!dbConnectionsMap.containsKey(serviceName)) {
-            log.warn("Не найдены данные по сервису {} для репликации", serviceName);
-            return;
+        if (vault.isVaultConnected() && vault.serviceSecretsExist(serviceName)) {
+            source = vault.getServiceSecrets(serviceName);
+        } else {
+            source = dbSourcesService.getDbConnections()
+                    .stream()
+                    .filter(s -> s.getName().equals(serviceName))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Не найден сервис: " + serviceName));
         }
 
-        SourceDbConnections source = dbConnectionsMap.get(serviceName);
+        int totalSchemas = 0;
+        int totalTables = 0;
 
-        List<String> databases = databaseReplication(source);
+        try {
+            svoiCustomLogger.logConnectToSource(
+                    source.getHostFromUrl(),
+                    source.getPortFromUrl(),
+                    source.getDbType(),
+                    source.getUsername()
+            );
 
-        for (String dbName : databases) {
-            schemaReplication(source, dbName);
-            tableReplication(source, dbName);
+            List<String> databases = databaseReplication(source);
+
+            for (String dbName : databases) {
+                totalSchemas += schemaReplication(source, dbName);
+                totalTables += tableReplication(source, dbName);
+            }
+
+            double durationSec = (System.nanoTime() - startTime) / 1_000_000_000.0;
+            String summary = String.format(
+                    "Replicated Mssql source [%s]: databases=%d, schemas=%d, tables=%d, duration=%.2fs",
+                    serviceName, databases.size(), totalSchemas, totalTables, durationSec
+            );
+
+            log.info("Репликация Mssql завершена: {}", summary);
+
+            svoiCustomLogger.send(
+                    "replicationJob",
+                    "Replication Finished",
+                    summary,
+                    SvoiSeverityEnum.ONE
+            );
+
+        } catch (SQLException e) {
+            svoiCustomLogger.logAuthError(
+                    source.getHostFromUrl(),
+                    source.getHostFromUrl(),
+                    source.getPortFromUrl(),
+                    source.getDbType(),
+                    source.getUsername(),
+                    e
+            );
+
+            log.error("Ошибка при подключении к источнику {}", source.getName(), e);
+            throw new RuntimeException("Ошибка при подключении к источнику: " + source.getName(), e);
         }
-
-        log.info("Репликация MSSQL завершена успешно для {}", serviceName);
-        svoiCustomLogger.send(
-                "replicationJob",
-                "Replication Finished",
-                String.format("Replicated MSSQL source: [%s];", serviceName),
-                SvoiSeverityEnum.ONE
-        );
     }
 
     private void truncateTables(String serviceName) {
@@ -93,7 +130,7 @@ public class ReplicationServiceImpl implements ReplicationService {
         tableRep.deleteByServiceName(serviceName);
     }
 
-    private List<String> databaseReplication(SourceDbConnections source) {
+    private List<String> databaseReplication(SourceDbConnections source) throws SQLException {
         List<String> response = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
@@ -120,14 +157,15 @@ public class ReplicationServiceImpl implements ReplicationService {
                 response.add(dbName);
             }
             databaseRep.saveAll(entities);
-
+            log.info("Реплицировано {} баз данных Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении баз для {}: {}", source.getName(), e.getMessage(), e);
         }
         return response;
     }
 
-    private void schemaReplication(SourceDbConnections source, String dbName) {
+    private Integer schemaReplication(SourceDbConnections source, String dbName) throws SQLException {
+        List<SchemaMetadata> entities = new ArrayList<>();
         String url = buildDbUrl(source.getUrl(), dbName);
         LocalDateTime now = LocalDateTime.now();
 
@@ -135,7 +173,7 @@ public class ReplicationServiceImpl implements ReplicationService {
              PreparedStatement stmt = conn.prepareStatement(sqlTemplates.getSchemaSql());
              ResultSet rs = stmt.executeQuery()) {
 
-            List<SchemaMetadata> entities = new ArrayList<>();
+            
             while (rs.next()) {
                 String schemaName = rs.getString("schema_name");
                 String fqn = String.join(".", source.getServiceName(), dbName, schemaName);
@@ -157,21 +195,22 @@ public class ReplicationServiceImpl implements ReplicationService {
                 entities.add(entity);
             }
             schemaRep.saveAll(entities);
-
+            log.info("Реплицировано {} схем Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении схем для {}: {}", source.getName(), e.getMessage(), e);
         }
+        return entities.size();
     }
 
-    private void tableReplication(SourceDbConnections source, String dbName) {
+    private Integer tableReplication(SourceDbConnections source, String dbName) throws SQLException {
+        List<TableMetadata> entities = new ArrayList<>();
         String url = buildDbUrl(source.getUrl(), dbName);
         LocalDateTime now = LocalDateTime.now();
 
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sqlTemplates.getTableSql());
              ResultSet rs = stmt.executeQuery()) {
-
-            List<TableMetadata> entities = new ArrayList<>();
+            
             while (rs.next()) {
                 try {
                     String schemaName = rs.getString("schema_name");
@@ -210,10 +249,11 @@ public class ReplicationServiceImpl implements ReplicationService {
                 }
             }
             tableRep.saveAll(entities);
-
+            log.info("Реплицировано {} таблиц Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении таблиц для {}: {}", source.getName(), e.getMessage(), e);
         }
+        return entities.size();
     }
 
 

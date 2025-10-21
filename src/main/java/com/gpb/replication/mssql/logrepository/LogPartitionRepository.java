@@ -26,12 +26,12 @@ public class LogPartitionRepository {
         }
 
         LocalDate currentDate = LocalDate.now();
-        String partitionName = String.format("postgres_replicator_log_%s",
+        String partitionName = String.format("jdata_replicator_log_%s",
                 currentDate.format(DateTimeFormatter.ofPattern("yyyy_MM_dd")));
 
         String sql = String.format("""
                 CREATE TABLE IF NOT EXISTS %s 
-                PARTITION OF postgres_replicator_log 
+                PARTITION OF jdata_replicator_log 
                 FOR VALUES FROM ('%s 00:00:00') TO ('%s 00:00:00')
                 """,
                 partitionName,
@@ -48,7 +48,7 @@ public class LogPartitionRepository {
         }
 
         LocalDate dateToDelete = LocalDate.now().minusYears(cleanDatabaseLogs.getCleanPeriod());
-        String partitionName = String.format("postgres_replicator_log_%d_%02d_%02d",
+        String partitionName = String.format("jdata_replicator_log_%d_%02d_%02d",
                 dateToDelete.getYear(),
                 dateToDelete.getMonthValue(),
                 dateToDelete.getDayOfMonth()

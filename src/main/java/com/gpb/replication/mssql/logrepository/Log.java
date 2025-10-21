@@ -8,11 +8,9 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 
-//@Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//@Table(name = "postgres_replicator_log")
 public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

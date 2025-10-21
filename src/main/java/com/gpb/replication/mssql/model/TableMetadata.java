@@ -44,7 +44,6 @@ public class TableMetadata {
 
     @Column(columnDefinition = "jsonb", nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
-    // @Convert(converter = JsonNodeConverter.class)
     private JsonNode data;
 
     @Column(name = "hash_data")

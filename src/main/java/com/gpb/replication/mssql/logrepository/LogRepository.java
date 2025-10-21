@@ -16,7 +16,7 @@ public class LogRepository{
     public Log findLatestByType(String type, String host) {
         String sql = """
             SELECT l.id, l.type, l.log, l.created
-            FROM postgres_replicator_log l
+            FROM jdata_replicator_log l
             WHERE l.type = ?
               AND l.log LIKE ?
             ORDER BY l.created DESC
@@ -38,7 +38,7 @@ public class LogRepository{
 
     public void save(Log log) {
         String sql = """
-            INSERT INTO postgres_replicator_log (created, log, type)
+            INSERT INTO jdata_replicator_log (created, log, type)
             VALUES (?, ?, ?)
         """;
 

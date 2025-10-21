@@ -14,10 +14,11 @@
 spring:
   application:
     name: mssql-replication-service
-    version: 0.0.2
+    version: ${APP_VERSION:0.0.1}
     dpt: 9200
     dntdom: GPB
     user: test_user
+    host: test_dns
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata}
