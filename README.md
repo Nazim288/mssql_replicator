@@ -8,3 +8,12 @@
 
 ```bash
 mvn package spring-boot:repackage -Dapp.version=${app.version}
+```
+
+## Запуск приложения
+
+Для запуска приложения выполните команду:
+
+```bash
+java -jar mssql-replication-${app.version}.jar --spring.config.location=file:config/application.yaml
+```
