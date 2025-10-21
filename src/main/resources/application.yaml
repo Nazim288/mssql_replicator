@@ -1,17 +1,28 @@
-# application.yml
+# server:
+#   port: 9200
+#   ssl:
+#     key-store: file:/app/cert/certificate.pfx
+#     key-store-password: ${KEYSTORE_PASSWORD}
+#     key-store-type: PKCS12
+#     enabled-protocols: TLSv1.3,TLSv1.2
+#     ciphers: >-
+#       TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+#       TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
+#       TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+#       TLS_DHE_RSA_WITH_AES_256_CBC_SHA256
 
 spring:
   application:
     name: mssql-replication-service
-    version: 0.0.1-SNAPSHOT
-    dpt: 912044
+    version: 0.0.2
+    dpt: 9200
     dntdom: GPB
     user: test_user
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata
-    username: postgres
-    password: kampus
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:kampus}
     driverClassName: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -32,9 +43,9 @@ spring:
     schemas: mssql_metadata
     enabled: true
     locations: classpath:db/migration
-    url: jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata
-    user: postgres
-    password: kampus
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata}
+    user: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:kampus}
 
   tomcat:
     max-connections: 100 # Максимальное количество соединений
@@ -42,12 +53,40 @@ spring:
     threads:
       max: 50 # Размер очереди запросов
 
+  # vault config
+  config:
+    import: optional:vault://
+  cloud:
+    vault:
+      uri: https://vault:8200
+      authentication: APPROLE
+      app-role:
+        role-id: ${VAULT_ROLE_ID}
+        secret-id: ${VAULT_SECRET_ID}
+        app-role-path: ${VAULT_MOUNT_POINT}
+      ssl:
+        trust-store: file:/path/to/jks
+        trust-store-password: ${VAULT_JKS_PASS}
+        trust-store-type: JKS
+        enabled: true
+      kv:
+        enabled: true
+        backend: secret_v2_t
+        default-context: path/to/secrets
+        application-name: ""
+      connection-timeout: 5000
+      read-timeout: 15000
+
+sources:
+  connections:
+    file-path: file:${CONFIG_DIR:classpath:db-connections.json}
+
 logs-database:
   enabled: true
   task-create-partition: 0 0 0 * * ?
-  url: jdbc:postgresql://localhost:5432/log_db
-  username: postgres
-  password: kampus
+  url: ${DB_AUDIT_URL:jdbc:postgresql://localhost:5432/audit_db?currentSchema=audit}
+  username: ${DB_AUDIT_USER:postgres}
+  password: ${DB_AUDIT_PASSWORD:postgres}
   driverClassName: org.postgresql.Driver
 
 clean-database-logs:
@@ -69,12 +108,6 @@ management:
         prometheus:
           enabled: true
 
-
-
-sources:
-  connections:
-    file-path: ${CONFIG_DIR:classpath:db-connections.json}
-
 logging:
   level:
     root: INFO
@@ -84,7 +117,7 @@ logging:
     org.springframework.jdbc: WARN
     com.example.flinkreplication: DEBUG
   file:
-    name: logs/flink-replication.log
+    name: logs/mssql-replication.log
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     console: "%d{HH:mm:ss} %-5level %logger{36} - %msg%n"
