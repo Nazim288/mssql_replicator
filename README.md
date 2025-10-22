@@ -7,7 +7,7 @@
 Для сборки приложения в JAR-файл выполните команду:
 
 ```bash
-mvn package spring-boot:repackage -Dapp.version=${app.version}
+mvn clean package -Dapp.version=${app.version}
 ```
 
 ## Запуск приложения
