@@ -1,5 +1,6 @@
 package com.gpb.replication.mssql.log;
 
+import com.gpb.replication.mssql.service.CefLogFileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,14 +14,21 @@ import com.gpb.replication.mssql.logrepository.LogPartitionRepository;
 public class LogScheduler {
     private final SvoiCustomLogger svoiCustomLogger;
     private final LogPartitionRepository logPartitionRepository;
+    private final CefLogFileService cefLogger;
 
     @Scheduled(cron = "${logs-database.task-create-partition}")
     public void createPartition() {
         logPartitionRepository.createTodayPartition();
     }
+
     @Scheduled(cron = "${clean-database-logs.task-cleaner-schedule}")
     public void cleanPartition() {
         logPartitionRepository.dropOldPartitions();
         svoiCustomLogger.send("cleanLogs", "Clean Logs", "Cleaned old logs", SvoiSeverityEnum.ONE);
+    }
+    @Scheduled(cron = "${clean-database-logs.task-cleaner-schedule}")
+    public void cleanupOldLogs() {
+        cefLogger.rotateLogFile();
+        cefLogger.cleanupOldLogs();
     }
 }

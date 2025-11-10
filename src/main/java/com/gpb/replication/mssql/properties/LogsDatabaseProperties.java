@@ -1,5 +1,6 @@
 package com.gpb.replication.mssql.properties;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -14,4 +15,17 @@ public class LogsDatabaseProperties {
     private String username;
     private String password;
     private String driverClassName;
+    private String table;
+
+    @PostConstruct
+    public void validate() {
+        if (enabled) {
+            if (table == null || table.trim().isEmpty()) {
+                throw new IllegalStateException("""
+                    Конфигурация logs-database.table не задана!
+                    Укажи полное имя таблицы для записи логов в конфигурации
+                    """);
+            }
+        }
+    }
 }

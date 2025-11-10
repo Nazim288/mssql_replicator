@@ -1,50 +1,67 @@
 package com.gpb.replication.mssql.logrepository;
 
-import lombok.RequiredArgsConstructor;
+import com.gpb.replication.mssql.properties.LogsDatabaseProperties;
+import com.gpb.replication.mssql.service.CefLogFileService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Date;
+import java.sql.Timestamp;
 
 
 @Repository
-@RequiredArgsConstructor
-public class LogRepository{
+public class LogRepository {
 
     private final JdbcTemplate logsJdbcTemplate;
+    private final CefLogFileService cefLogFileService;
+    private final LogsDatabaseProperties logsDatabaseProperties;
+
+    public LogRepository(@Qualifier("logsJdbcTemplate") JdbcTemplate logsJdbcTemplate, CefLogFileService cefLogFileService,
+                         LogsDatabaseProperties logsDatabaseProperties) {
+        this.logsJdbcTemplate = logsJdbcTemplate;
+        this.cefLogFileService = cefLogFileService;
+        this.logsDatabaseProperties = logsDatabaseProperties;
+    }
+
 
     public Log findLatestByType(String type, String host) {
-        String sql = """
-            SELECT l.id, l.type, l.log, l.created
-            FROM jdata_replicator_log l
-            WHERE l.type = ?
-              AND l.log LIKE ?
-            ORDER BY l.created DESC
-            LIMIT 1
-        """;
+        String table = logsDatabaseProperties.getTable().trim();
+        String sql = String.format("""
+                SELECT l.id, l.type, l.log, l.created
+                FROM %s l
+                WHERE l.type = ?
+                  AND l.log LIKE ?
+                ORDER BY l.created DESC
+                LIMIT 1
+                """, table);
+
 
         return logsJdbcTemplate.query(sql, new Object[]{type, "%" + host + "%"}, rs -> {
             if (rs.next()) {
-                Log log = new Log();
-                log.setId(rs.getObject("id", Integer.class));
-                log.setType(rs.getString("type"));
-                log.setLog(rs.getString("log"));
-                log.setCreated(new Date(rs.getTimestamp("created").getTime()));
-                return log;
+                Log logEntity = new Log();
+                logEntity.setId(rs.getObject("id", Integer.class));
+                logEntity.setType(rs.getString("type"));
+                logEntity.setLog(rs.getString("log"));
+                logEntity.setCreated(rs.getTimestamp("created").toLocalDateTime());
+                return logEntity;
             }
             return null;
         });
     }
 
-    public void save(Log log) {
-        String sql = """
-            INSERT INTO jdata_replicator_log (created, log, type)
-            VALUES (?, ?, ?)
-        """;
+    public void save(Log logEntity) {
+        String table = logsDatabaseProperties.getTable().trim();
+        String sql = String.format("""
+                INSERT INTO %s (created, log, type)
+                VALUES (?, ?, ?)
+                """, table);
 
         logsJdbcTemplate.update(sql,
-                new java.sql.Timestamp(log.getCreated().getTime()),
-                log.getLog(),
-                log.getType());
+                Timestamp.valueOf(logEntity.getCreated()),
+                logEntity.getLog(),
+                logEntity.getType());
+
+        cefLogFileService.writeToFile(logEntity.getCreated(), logEntity.getLog());
+        cefLogFileService.cleanupOldLogs();
     }
 }

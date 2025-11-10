@@ -3,8 +3,8 @@ package com.gpb.replication.mssql.log;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Getter
 @Setter
@@ -14,7 +14,7 @@ public class SvoiJournal {
     private static final String CEF_DATA = "CEF:0";
     private static final String EQUALS = "=";
     private static final String SPACE = " ";
-    private SimpleDateFormat sdf;
+    private DateTimeFormatter sdf;
     private static final String DEVICE_VENDOR = "OmniPlatform";
     private String time;
     private String deviceProduct;
@@ -45,7 +45,7 @@ public class SvoiJournal {
     private String dvchost;
     private String hostForSvoi;
 
-    public SvoiJournal(Long externalId, SimpleDateFormat sdf) {
+    public SvoiJournal(Long externalId, DateTimeFormatter sdf) {
         this.severity = SvoiSeverityEnum.ONE;
         this.outcome = SvoiOutcomeEnum.SUCCESS;
         this.externalId = externalId;
@@ -110,7 +110,7 @@ public class SvoiJournal {
         }
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = this.sdf.format(time);
     }
 
@@ -123,15 +123,15 @@ public class SvoiJournal {
         if (deviceVersion != null)
             this.deviceVersion = deviceVersion;
     }
-    public void setStart(Date start) {
+    public void setStart(LocalDateTime start) {
         this.start = this.sdf.format(start);
     }
 
-    public void setEnd(Date end) {
+    public void setEnd(LocalDateTime end) {
         this.end = this.sdf.format(end);
     }
 
-    public void setRt(Date rt) {
+    public void setRt(LocalDateTime rt) {
         this.rt = this.sdf.format(rt);
     }
 

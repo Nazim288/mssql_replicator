@@ -23,7 +23,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata}
     username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:kampus}
+    password: ${DB_PASSWORD:password}
     driverClassName: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -46,7 +46,7 @@ spring:
     locations: classpath:db/migration
     url: ${DB_URL:jdbc:postgresql://localhost:5432/meta_base?currentSchema=mssql_metadata}
     user: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:kampus}
+    password: ${DB_PASSWORD:password}
 
   tomcat:
     max-connections: 100 # Максимальное количество соединений
@@ -65,11 +65,7 @@ spring:
         role-id: ${VAULT_ROLE_ID}
         secret-id: ${VAULT_SECRET_ID}
         app-role-path: ${VAULT_MOUNT_POINT}
-      ssl:
-        trust-store: file:/path/to/jks
-        trust-store-password: ${VAULT_JKS_PASS}
-        trust-store-type: JKS
-        enabled: true
+
       kv:
         enabled: true
         backend: secret_v2_t
@@ -85,10 +81,11 @@ sources:
 logs-database:
   enabled: true
   task-create-partition: 0 0 0 * * ?
-  url: ${DB_AUDIT_URL:jdbc:postgresql://localhost:5432/audit_db?currentSchema=audit}
+  url: ${DB_AUDIT_URL:jdbc:postgresql://localhost:5432/db_log?currentSchema=audit}
   username: ${DB_AUDIT_USER:postgres}
-  password: ${DB_AUDIT_PASSWORD:postgres}
+  password: ${DB_AUDIT_PASSWORD:password}
   driverClassName: org.postgresql.Driver
+  table: "audit.jdata_mssql_log"
 
 clean-database-logs:
   # cron expression, to switch off put value '-'
@@ -110,6 +107,9 @@ management:
           enabled: true
 
 logging:
+  cef:
+    path: logs/cef
+    retention-days: 30
   level:
     root: INFO
     org.hibernate.SQL: DEBUG
@@ -118,7 +118,7 @@ logging:
     org.springframework.jdbc: WARN
     com.example.flinkreplication: DEBUG
   file:
-    name: logs/mssql-replication.log
+    name: logs/jdata.log
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     console: "%d{HH:mm:ss} %-5level %logger{36} - %msg%n"

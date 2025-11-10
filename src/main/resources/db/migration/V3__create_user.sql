@@ -1,4 +1,4 @@
-CREATE TABLE mssql_metadata.users (
+CREATE TABLE IF NOT EXISTS mssql_metadata.users (
                        id SERIAL PRIMARY KEY,
                        username VARCHAR(50) UNIQUE NOT NULL,
                        password VARCHAR(200) NOT NULL,

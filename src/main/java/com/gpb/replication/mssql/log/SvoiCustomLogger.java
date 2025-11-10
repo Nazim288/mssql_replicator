@@ -16,7 +16,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
@@ -27,7 +28,7 @@ public class SvoiCustomLogger {
     private final LogsDatabaseProperties logsDatabaseProperties;
     private final LogRepository logRepository;
     private final SvoiJournalFactory svoiJournalFactory = new SvoiJournalFactory();
-    private final SimpleDateFormat format = new SimpleDateFormat("MMM dd yyyy HH:mm:ss", Locale.getDefault());
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     @Autowired
     public SvoiCustomLogger(SysProperties sysProperties,
@@ -208,7 +209,7 @@ public class SvoiCustomLogger {
             return;
 
         try {
-            Date created = format.parse(journal.getStart());
+            LocalDateTime created = LocalDateTime.parse(journal.getStart(), formatter);
             logRepository.save(new Log(created,
                     StringUtils.replace(journal.toString(), "OmniPlatform", "ORD"),
                     deviceEventClassID));
