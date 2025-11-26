@@ -32,24 +32,20 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ReplicationServiceImpl implements ReplicationService {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final DbSourcesService dbSourcesService;
     private final SvoiCustomLogger svoiCustomLogger;
-
     private final DatabaseMetadataRepository databaseRep;
     private final SchemaMetadataRepository schemaRep;
     private final TableMetadataRepository tableRep;
     private final SqlTemplates sqlTemplates;
-
     private final VaultSecretService vault;
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Async
     public void startReplicationAsync(String serviceName) {
@@ -58,14 +54,7 @@ public class ReplicationServiceImpl implements ReplicationService {
 
     @Override
     public void startReplication(String serviceName) {
-        String jobId = UUID.randomUUID().toString();
-        long startTime = System.nanoTime();
-        log.info("Начало репликации Mssql для {} (job_id={})", serviceName, jobId);
-
-        truncateTables(serviceName);
-
         SourceDbConnections source;
-
         if (vault.isVaultConnected() && vault.serviceSecretsExist(serviceName)) {
             source = vault.getServiceSecrets(serviceName);
         } else {
@@ -75,9 +64,7 @@ public class ReplicationServiceImpl implements ReplicationService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Не найден сервис: " + serviceName));
         }
-
-        int totalSchemas = 0;
-        int totalTables = 0;
+        truncateTables(serviceName);
 
         try {
             svoiCustomLogger.logConnectToSource(
@@ -88,46 +75,57 @@ public class ReplicationServiceImpl implements ReplicationService {
             );
 
             List<String> databases = databaseReplication(source);
-
             for (String dbName : databases) {
-                totalSchemas += schemaReplication(source, dbName);
-                totalTables += tableReplication(source, dbName);
+                try {
+                    schemaReplication(source, dbName);
+                } catch (SQLException e) {
+                    svoiCustomLogger.logDbConnectionError(
+                            source.getHostFromUrl(),
+                            source.getPortFromUrl(),
+                            source.getDbType(),
+                            source.getUsername(),
+                            e
+                    );
+                    continue;
+                }
+                tableReplication(source, dbName);
             }
 
-            double durationSec = (System.nanoTime() - startTime) / 1_000_000_000.0;
-            String summary = String.format(
-                    "Replicated Mssql source [%s]: databases=%d, schemas=%d, tables=%d, duration=%.2fs",
-                    serviceName, databases.size(), totalSchemas, totalTables, durationSec
-            );
-
-            log.info("Репликация Mssql завершена: {}", summary);
-
-            svoiCustomLogger.send(
+            log.info("Репликация Mssql завершена: {}", serviceName);
+            svoiCustomLogger.sendInternal(
                     "replicationJob",
                     "Replication Finished",
-                    summary,
+                    String.format(
+                            "Replicated Mssql source [%s]: databases=%d",
+                            serviceName, databases.size()),
                     SvoiSeverityEnum.ONE
             );
 
         } catch (SQLException e) {
-            svoiCustomLogger.logAuthError(
-                    source.getHostFromUrl(),
+            svoiCustomLogger.logDbConnectionError(
                     source.getHostFromUrl(),
                     source.getPortFromUrl(),
                     source.getDbType(),
                     source.getUsername(),
                     e
             );
-
             log.error("Ошибка при подключении к источнику {}", source.getName(), e);
             throw new RuntimeException("Ошибка при подключении к источнику: " + source.getName(), e);
         }
     }
 
     private void truncateTables(String serviceName) {
+        svoiCustomLogger.sendInternal(
+                "replicationDataReset",
+                "replication Data Reset",
+                "serviceName=" + serviceName,
+                SvoiSeverityEnum.ONE
+        );
+
         databaseRep.deleteByServiceName(serviceName);
         schemaRep.deleteByServiceName(serviceName);
         tableRep.deleteByServiceName(serviceName);
+        log.info("Truncated metadata tables for service={}", serviceName);
     }
 
     private List<String> databaseReplication(SourceDbConnections source) throws SQLException {
@@ -142,7 +140,6 @@ public class ReplicationServiceImpl implements ReplicationService {
             while (rs.next()) {
                 String dbName = rs.getString("datname");
                 String fqn = String.join(".", source.getServiceName(), dbName);
-
                 EntityId id = new EntityId(rs.getLong("oid"), source.getServiceName());
 
                 DatabaseMetadata entity = new DatabaseMetadata();
@@ -154,17 +151,17 @@ public class ReplicationServiceImpl implements ReplicationService {
                 entity.setHashData(DigestUtils.md5Hex(fqn));
 
                 entities.add(entity);
-                response.add(dbName);
             }
             databaseRep.saveAll(entities);
             log.info("Реплицировано {} баз данных Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении баз для {}: {}", source.getName(), e.getMessage(), e);
+            throw e;
         }
         return response;
     }
 
-    private Integer schemaReplication(SourceDbConnections source, String dbName) throws SQLException {
+    private void schemaReplication(SourceDbConnections source, String dbName) throws SQLException {
         List<SchemaMetadata> entities = new ArrayList<>();
         String url = buildDbUrl(source.getUrl(), dbName);
         LocalDateTime now = LocalDateTime.now();
@@ -172,15 +169,10 @@ public class ReplicationServiceImpl implements ReplicationService {
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sqlTemplates.getSchemaSql());
              ResultSet rs = stmt.executeQuery()) {
-
-            
             while (rs.next()) {
                 String schemaName = rs.getString("schema_name");
                 String fqn = String.join(".", source.getServiceName(), dbName, schemaName);
-
-                // делаем parentFqn уникальным на уровне базы
                 String parentFqn = source.getServiceName() + "." + dbName;
-
                 EntityId id = new EntityId(rs.getLong("oid"), parentFqn);
 
                 SchemaMetadata entity = new SchemaMetadata();
@@ -198,11 +190,11 @@ public class ReplicationServiceImpl implements ReplicationService {
             log.info("Реплицировано {} схем Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении схем для {}: {}", source.getName(), e.getMessage(), e);
+            throw e;
         }
-        return entities.size();
     }
 
-    private Integer tableReplication(SourceDbConnections source, String dbName) throws SQLException {
+    private void tableReplication(SourceDbConnections source, String dbName) throws SQLException {
         List<TableMetadata> entities = new ArrayList<>();
         String url = buildDbUrl(source.getUrl(), dbName);
         LocalDateTime now = LocalDateTime.now();
@@ -210,17 +202,12 @@ public class ReplicationServiceImpl implements ReplicationService {
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
              PreparedStatement stmt = conn.prepareStatement(sqlTemplates.getTableSql());
              ResultSet rs = stmt.executeQuery()) {
-            
             while (rs.next()) {
                 try {
                     String schemaName = rs.getString("schema_name");
                     String tableName = rs.getString("table_name");
-
                     String fqn = String.join(".", source.getServiceName(), dbName, schemaName, tableName);
-
-                    // parentFqn включает базу и схему
                     String parentFqn = source.getServiceName() + "." + dbName + "." + schemaName;
-
                     EntityId id = new EntityId(rs.getLong("oid"), parentFqn);
 
                     TableMetadata entity = new TableMetadata();
@@ -243,7 +230,6 @@ public class ReplicationServiceImpl implements ReplicationService {
                     entity.setData(jsonNode);
 
                     entities.add(entity);
-
                 } catch (Exception e) {
                     log.error("Ошибка при обработке таблицы {}: {}", rs.getString("table_name"), e.getMessage(), e);
                 }
@@ -252,10 +238,9 @@ public class ReplicationServiceImpl implements ReplicationService {
             log.info("Реплицировано {} таблиц Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
             log.error("Ошибка при получении таблиц для {}: {}", source.getName(), e.getMessage(), e);
+            throw e;
         }
-        return entities.size();
     }
-
 
     private String buildDbUrl(String originalUrl, String dbName) {
         if (originalUrl.contains("databaseName=")) {

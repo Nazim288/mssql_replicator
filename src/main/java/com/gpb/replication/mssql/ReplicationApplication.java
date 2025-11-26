@@ -37,13 +37,11 @@ public class ReplicationApplication {
     private final LogPartitionRepository logPartitionRepository;
     private final LogRepository logRepository;
     private final ConfigurableEnvironment configurableEnvironment;
-    private static ConfigurableApplicationContext applicationContext;
 
     @PostConstruct
     public void startupApplication() {
         logPartitionRepository.createTodayPartition();
-        svoiCustomLogger.send("startService", "Start Service", "Started service", SvoiSeverityEnum.ONE);
-
+        svoiCustomLogger.sendInternal("startService", "Start Service", "Started service", SvoiSeverityEnum.ONE);
         checkConfigChanges();
     }
 
@@ -54,13 +52,13 @@ public class ReplicationApplication {
 
         Log logEntity = logRepository.findLatestByType("checkConfig", localHostName);
         if (logEntity == null) {
-            svoiCustomLogger.send("checkConfig", "Check Config", propsHash, SvoiSeverityEnum.ONE);
+            svoiCustomLogger.sendInternal("checkConfig", "Check Config", propsHash, SvoiSeverityEnum.ONE);
         } else {
             String prevHash = StringUtils.trim(
                     StringUtils.substringBetween(logEntity.getLog(), "msg=", "deviceProcessName=")
             );
             if (!StringUtils.equals(prevHash, propsHash)) {
-                svoiCustomLogger.send("checkConfig", "Check Config", propsHash, SvoiSeverityEnum.ONE);
+                svoiCustomLogger.sendInternal("checkConfig", "Check Config", propsHash, SvoiSeverityEnum.ONE);
             }
         }
     }
@@ -79,16 +77,6 @@ public class ReplicationApplication {
 
     @PreDestroy
     public void shutdownApplication() {
-        svoiCustomLogger.send("stopService", "Stop Service", "Stopped service", SvoiSeverityEnum.ONE);
-    }
-
-    public static void restart() {
-        ApplicationArguments args = applicationContext.getBean(ApplicationArguments.class);
-        Thread thread = new Thread(() -> {
-            applicationContext.close();
-            applicationContext = SpringApplication.run(ReplicationApplication.class, args.getSourceArgs());
-        });
-        thread.setDaemon(false);
-        thread.start();
+        svoiCustomLogger.sendInternal("stopService", "Stop Service", "Stopped service", SvoiSeverityEnum.ONE);
     }
 }

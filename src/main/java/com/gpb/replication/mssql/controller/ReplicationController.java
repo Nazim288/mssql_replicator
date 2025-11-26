@@ -25,7 +25,6 @@ public class ReplicationController {
 
     @PostMapping("/start")
     @Operation(summary = "Запуск репликации по наименованию сервиса")
-
     public ResponseEntity<String> startReplication(@RequestBody ReplicationRequestDto dto, HttpServletRequest httpServletRequest) {
         try {
             logger.logApiCall(httpServletRequest, "startReplicationMssql", dto);

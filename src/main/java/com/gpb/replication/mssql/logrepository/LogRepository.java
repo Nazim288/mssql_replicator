@@ -11,7 +11,6 @@ import java.sql.Timestamp;
 
 @Repository
 public class LogRepository {
-
     private final JdbcTemplate logsJdbcTemplate;
     private final CefLogFileService cefLogFileService;
     private final LogsDatabaseProperties logsDatabaseProperties;
@@ -62,6 +61,5 @@ public class LogRepository {
                 logEntity.getType());
 
         cefLogFileService.writeToFile(logEntity.getCreated(), logEntity.getLog());
-        cefLogFileService.cleanupOldLogs();
     }
 }
