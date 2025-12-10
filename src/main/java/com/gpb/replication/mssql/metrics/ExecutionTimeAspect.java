@@ -12,7 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ExecutionTimeAspect {
     
-    @Around("execution(* com.gpb.replication.mssql.service.*.*(..))")
+    @Around("execution(* com.gpb.replication.mssql.service.*.*(..)) && " +
+            "!within(com.gpb.replication.mssql.service.CefLogFileService) && " +
+            "!within(com.gpb.replication.mssql.service.KeycloakAuthService) && " +
+            "!within(com.gpb.replication.mssql.service.CustomAuthenticationEntryPoint) && " +
+            "!within(com.gpb.replication.mssql.service.CustomUserDetailsService)")
     public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
         

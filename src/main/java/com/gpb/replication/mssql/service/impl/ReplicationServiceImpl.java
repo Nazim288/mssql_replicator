@@ -75,6 +75,7 @@ public class ReplicationServiceImpl implements ReplicationService {
             );
 
             List<String> databases = databaseReplication(source);
+            databases.add("master");
             for (String dbName : databases) {
                 try {
                     schemaReplication(source, dbName);
@@ -151,6 +152,7 @@ public class ReplicationServiceImpl implements ReplicationService {
                 entity.setHashData(DigestUtils.md5Hex(fqn));
 
                 entities.add(entity);
+                response.add(dbName);
             }
             databaseRep.saveAll(entities);
             log.info("Реплицировано {} баз данных Mssql для {}", entities.size(), source.getServiceName());
@@ -163,7 +165,7 @@ public class ReplicationServiceImpl implements ReplicationService {
 
     private void schemaReplication(SourceDbConnections source, String dbName) throws SQLException {
         List<SchemaMetadata> entities = new ArrayList<>();
-        String url = buildDbUrl(source.getUrl(), dbName);
+        String url = buildDbUrl(source.getUrl(), dbName.toLowerCase());
         LocalDateTime now = LocalDateTime.now();
 
         try (Connection conn = DriverManager.getConnection(url, source.getUsername(), source.getPassword());
@@ -246,6 +248,6 @@ public class ReplicationServiceImpl implements ReplicationService {
         if (originalUrl.contains("databaseName=")) {
             return originalUrl.replaceAll("databaseName=[^;]+", "databaseName=" + dbName);
         }
-        return originalUrl + ";databaseName=" + dbName;
+        return originalUrl + "databaseName=" + dbName + ";";
     }
 }
