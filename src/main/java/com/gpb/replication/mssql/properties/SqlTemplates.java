@@ -13,8 +13,7 @@ public class SqlTemplates {
             SELECT database_id AS oid, name AS datname
             FROM sys.databases
             WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb')
-              AND state = 0 -- ONLINE
-              AND is_read_only = 0;
+              AND state = 0 -- ONLINE;
             """;
 
     private final String schemaSql = """
@@ -64,26 +63,34 @@ public class SqlTemplates {
                     FOR JSON PATH
                 ) AS columns,
                 (
-                     SELECT
-                         JSON_QUERY(
-                             '[' + STRING_AGG(QUOTENAME(kcu.COLUMN_NAME, '"'), ',') + ']'
-                         ) AS columns,
-                         CASE
-                             WHEN tc.CONSTRAINT_TYPE = 'PRIMARY KEY' THEN 'PRIMARY_KEY'
-                             WHEN tc.CONSTRAINT_TYPE = 'FOREIGN KEY' THEN 'FOREIGN_KEY'
-                             WHEN tc.CONSTRAINT_TYPE = 'UNIQUE' THEN 'UNIQUE'
-                             WHEN tc.CONSTRAINT_TYPE = 'CHECK' THEN 'CHECK'
-                             ELSE tc.CONSTRAINT_TYPE
-                         END AS constraintType
-                     FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                     JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                       ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-                      AND tc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
-                     WHERE tc.TABLE_NAME = t.name
-                       AND tc.TABLE_SCHEMA = s.name
-                     GROUP BY tc.CONSTRAINT_NAME, tc.CONSTRAINT_TYPE
-                     FOR JSON PATH
-                 ) AS tableConstraints
+                    SELECT
+                        JSON_QUERY(
+                            '[' +
+                            STUFF((
+                                SELECT
+                                    ',' + QUOTENAME(kcu2.COLUMN_NAME, '"')
+                                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu2
+                                WHERE kcu2.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+                                AND kcu2.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+                                AND kcu2.TABLE_NAME = tc.TABLE_NAME
+                                AND kcu2.TABLE_SCHEMA = tc.TABLE_SCHEMA
+                                ORDER BY kcu2.ORDINAL_POSITION
+                                FOR XML PATH(''), TYPE
+                            ).value('.', 'nvarchar(max)'), 1, 1, '')
+                            + ']'
+                        ) AS columns,
+                        CASE
+                            WHEN tc.CONSTRAINT_TYPE = 'PRIMARY KEY' THEN 'PRIMARY_KEY'
+                            WHEN tc.CONSTRAINT_TYPE = 'FOREIGN KEY' THEN 'FOREIGN_KEY'
+                            WHEN tc.CONSTRAINT_TYPE = 'UNIQUE' THEN 'UNIQUE'
+                            WHEN tc.CONSTRAINT_TYPE = 'CHECK' THEN 'CHECK'
+                            ELSE tc.CONSTRAINT_TYPE
+                        END AS constraintType
+                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    WHERE tc.TABLE_NAME = t.name
+                    AND tc.TABLE_SCHEMA = s.name
+                    FOR JSON PATH
+                ) AS tableConstraints
                  ,
                 t.type AS rawTableType
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER

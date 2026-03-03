@@ -191,7 +191,7 @@ public class ReplicationServiceImpl implements ReplicationService {
             schemaRep.saveAll(entities);
             log.info("Реплицировано {} схем Mssql для {}", entities.size(), source.getServiceName());
         } catch (SQLException e) {
-            log.error("Ошибка при получении схем для {}: {}", source.getName(), e.getMessage(), e);
+            log.error("Ошибка при получении схем для {}: ({}) {}", source.getName(), url, e.getMessage(), e);
             throw e;
         }
     }
